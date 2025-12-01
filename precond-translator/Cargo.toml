@@ -1,0 +1,12 @@
+[package]
+name = "precond-translator"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+syn = "*"
+verus_syn = { git = "https://github.com/verus-lang/verus.git", features = ["visit"] }
+proc-macro2 = "1.0"
+prettyplease = "*"
+quote = "*"
+anyhow = "1.0"

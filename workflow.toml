@@ -1,0 +1,33 @@
+components = ["kani", "pbt", "difffuzz"]
+
+[kani]
+harness_path = "kani_harness"
+output_path = "kani.tmp"
+timeout_secs = 1
+gen_harness = true
+keep_harness = true
+keep_output = true
+use_preconditions = true
+loop_unwind = 20
+
+[alive2]
+alive2_path = ""
+output_path = "alive2.tmp"
+keep_output = false
+
+[diff_fuzz]
+harness_path = "df_harness"
+output_path = "df.tmp"
+executions = 500000
+keep_harness = true
+keep_output = true
+catch_panic = true
+use_preconditions = false
+
+[pbt]
+harness_path = "pbt_harness"
+output_path = "pbt.tmp"
+test_cases = 50000
+keep_harness = true
+keep_output = true
+use_preconditions = false

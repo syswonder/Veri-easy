@@ -1,0 +1,15 @@
+[package]
+name = "hvisor-verified-allocator"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+
+[dev-dependencies]
+criterion = "0.5"
+kani = "*"
+
+[[bench]]
+name = "bitalloc_bench"
+harness = false
+

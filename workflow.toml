@@ -1,9 +1,9 @@
-components = ["kani", "pbt", "difffuzz"]
+components = ["difffuzz"]
 
 [kani]
 harness_path = "kani_harness"
 output_path = "kani.tmp"
-timeout_secs = 1
+timeout_secs = 3
 gen_harness = true
 keep_harness = true
 keep_output = true
@@ -18,16 +18,19 @@ keep_output = false
 [diff_fuzz]
 harness_path = "df_harness"
 output_path = "df.tmp"
-executions = 500000
+initial_inputs = 16
+input_len = 150000
+executions = 1000000
 keep_harness = true
 keep_output = true
-catch_panic = true
-use_preconditions = false
+catch_panic = false
+use_preconditions = true
+harness_log = true
 
 [pbt]
 harness_path = "pbt_harness"
 output_path = "pbt.tmp"
-test_cases = 50000
+test_cases = 100000
 keep_harness = true
 keep_output = true
 use_preconditions = false

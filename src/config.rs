@@ -96,6 +96,10 @@ pub struct DiffFuzzConfig {
     pub output_path: String,
     /// Executions for fuzzing.
     pub executions: u32,
+    /// Initial input count.
+    pub initial_inputs: usize,
+    /// Length of each input.
+    pub input_len: usize,
     /// Keep fuzzing harness project.
     pub keep_harness: bool,
     /// Keep fuzzing output file.
@@ -104,6 +108,8 @@ pub struct DiffFuzzConfig {
     pub use_preconditions: bool,
     /// Catch panic unwind.
     pub catch_panic: bool,
+    /// Enable log in fuzzing harness
+    pub harness_log: bool,
 }
 
 impl Default for DiffFuzzConfig {
@@ -112,10 +118,13 @@ impl Default for DiffFuzzConfig {
             harness_path: "df_harness".to_string(),
             output_path: "df.tmp".to_string(),
             executions: 1000,
+            initial_inputs: 16,
+            input_len: 131072,
             keep_harness: false,
             keep_output: false,
             use_preconditions: true,
             catch_panic: true,
+            harness_log: true,
         }
     }
 }

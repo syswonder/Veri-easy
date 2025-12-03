@@ -20,6 +20,8 @@ struct DFHarnessBackend {
     use_preconditions: bool,
     /// Catch panic unwind.
     catch_panic: bool,
+    /// Enable log in fuzzing harness
+    harness_log: bool,
 }
 
 impl HarnessBackend for DFHarnessBackend {
@@ -284,6 +286,36 @@ impl HarnessBackend for DFHarnessBackend {
         methods: Vec<TokenStream>,
         additional: TokenStream,
     ) -> TokenStream {
+        let log_utils = if self.harness_log {
+            quote! {
+                // Harness logging utils
+                use std::io::Write;
+                static HARNESS_OUTPUT: std::sync::OnceLock<std::fs::File> = std::sync::OnceLock::new();
+                fn init_harness_output() {
+                    HARNESS_OUTPUT.set(std::fs::File::create("harness_output.log").unwrap()).unwrap();
+                }
+                fn get_harness_output() -> &'static std::fs::File {
+                    HARNESS_OUTPUT.get().expect("not initialized")
+                }
+                macro_rules! outputln {
+                    ($($arg:tt)*) => {
+                        writeln!(get_harness_output(), $($arg)*).unwrap();
+                    };
+                }
+            }
+        } else {
+            quote! {
+                macro_rules! outputln {
+                    ($($arg:tt)*) => {};
+                }
+            }
+        };
+        let init_log = self.harness_log.then(|| {
+            quote! {
+                init_harness_output();
+            }
+        });
+
         quote! {
             #![allow(unused)]
             #![allow(non_snake_case)]
@@ -292,27 +324,16 @@ impl HarnessBackend for DFHarnessBackend {
             mod mod2;
             #(#imports)*
 
-            macro_rules! outputln {
-                ($($arg:tt)*) => {
-                    writeln!(get_harness_output(), $($arg)*).unwrap();
-                };
-            }
+            // Harness logging utils
+            #log_utils
+
             #(#args_structs)*
             #(#functions)*
             #(#methods)*
             #additional
 
-            // Harness logging utils
-            use std::io::Write;
-            static HARNESS_OUTPUT: std::sync::OnceLock<std::fs::File> = std::sync::OnceLock::new();
-            fn init_harness_output() {
-                HARNESS_OUTPUT.set(std::fs::File::create("harness_output.log").unwrap()).unwrap();
-            }
-            fn get_harness_output() -> &'static std::fs::File {
-                HARNESS_OUTPUT.get().expect("not initialized")
-            }
             fn main() {
-                init_harness_output();
+                #init_log
                 afl::fuzz_nohook!(|data: &[u8]| {
                     if !run_harness(data) {
                         panic!("Harness reported failure for input: {:?}", data);
@@ -343,6 +364,7 @@ impl DifferentialFuzzing {
             DFHarnessBackend {
                 use_preconditions: self.config.use_preconditions,
                 catch_panic: self.config.catch_panic,
+                harness_log: self.config.harness_log,
             },
         );
         // Collect functions and methods that are checked in harness
@@ -396,10 +418,18 @@ afl = "*"
         std::fs::create_dir_all(&inputs_dir)
             .map_err(|_| anyhow!("Failed to create inputs directory"))?;
 
-        let mut file = std::fs::File::create(format!("{}/input1", inputs_dir))
-            .map_err(|_| anyhow!("Failed to create initial input file"))?;
-        file.write_all(&[12, 34, 56, 78])
-            .map_err(|_| anyhow!("Failed to write initial input file"))?;
+        for i in 0..self.config.initial_inputs {
+            let mut file = std::fs::File::create(format!("{}/input{}", inputs_dir, i))
+                .map_err(|_| anyhow!("Failed to create initial input file"))?;
+            // Generate random input data
+            let mut buf = Vec::with_capacity(self.config.input_len);
+            for _ in 0..(self.config.input_len) {
+                buf.push(rand::random::<u8>());
+            }
+            file.write_all(&buf)
+                .map_err(|_| anyhow!("Failed to write initial input file"))?;
+        }
+
         Ok(())
     }
 

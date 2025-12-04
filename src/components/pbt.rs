@@ -119,7 +119,9 @@ impl HarnessBackend for PBTHarnessBackend {
             precondition.map(|pre| {
                 let check_fn_name = pre.checker_name();
                 quote! {
-                    prop_assume!(s2.#check_fn_name(#(method_arg_struct.#method_args),*));
+                    if !s2.#check_fn_name(#(method_arg_struct.#method_args),*) {
+                        return Ok(());
+                    }
                 }
             })
         });
@@ -127,7 +129,6 @@ impl HarnessBackend for PBTHarnessBackend {
         // Error report message
         let err_report = quote! {
             println!("MISMATCH: {}", #fn_name_string);
-            println!("contructor: {:?}", constr_arg_struct);
             println!("method: {:?}", method_arg_struct);
         };
         // Return value check code
@@ -234,7 +235,7 @@ impl PropertyBasedTesting {
         Self { config }
     }
 
-    fn generate_harness_file(&self, checker: &Checker) -> (Vec<Path>, TokenStream) {
+    fn generate_harness(&self, checker: &Checker) -> TokenStream {
         let generator = PBTHarnessGenerator::new(
             checker,
             PBTHarnessBackend {
@@ -242,22 +243,7 @@ impl PropertyBasedTesting {
                 use_preconditions: self.config.use_preconditions,
             },
         );
-        // Collect functions and methods that are checked in harness
-        let functions = generator
-            .collection
-            .functions
-            .iter()
-            .map(|f| f.metadata.name.clone())
-            .chain(
-                generator
-                    .collection
-                    .methods
-                    .iter()
-                    .map(|f| f.metadata.name.clone()),
-            )
-            .collect::<Vec<_>>();
-        let harness = generator.generate_harness();
-        (functions, harness)
+        generator.generate_harness()
     }
 
     /// Create a cargo project for proptest harness.
@@ -276,6 +262,11 @@ edition = "2024"
 proptest = "1.9"
 proptest-derive = "0.2.0"
 "#;
+        // Set RUST_MIN_STACK to 16MB to avoid stack overflow in proptest
+        let config = r#"
+[env]
+RUST_MIN_STACK = "16777216"
+"#;
         create_harness_project(
             &self.config.harness_path,
             &checker.src1.content,
@@ -283,7 +274,13 @@ proptest-derive = "0.2.0"
             &harness.to_string(),
             toml,
             false,
-        )
+        )?;
+        std::fs::create_dir_all(format!("{}/.cargo", &self.config.harness_path))?;
+        std::fs::write(
+            format!("{}/.cargo/config.toml", &self.config.harness_path),
+            config,
+        )?;
+        Ok(())
     }
 
     /// Run libAFL fuzzer and save the ouput in "df.tmp".
@@ -298,24 +295,27 @@ proptest-derive = "0.2.0"
     }
 
     /// Analyze the fuzzer output and return the functions that are not checked.
-    fn analyze_pbt_output(&self, functions: &[Path]) -> CheckResult {
+    fn analyze_pbt_output(&self) -> CheckResult {
         let mut res = CheckResult {
             status: Ok(()),
-            ok: functions.to_vec(),
+            ok: vec![],
             fail: vec![],
         };
 
-        let re = Regex::new(r"MISMATCH:\s*(\S+)").unwrap();
+        let re_ok = Regex::new(r"test check_\s*(\S+) ... ok").unwrap();
+        let re_fail = Regex::new(r"test check_\s*(\S+) ... FAILED").unwrap();
+
         let file = std::fs::File::open(&self.config.output_path).unwrap();
         let reader = BufReader::new(file);
 
         for line in reader.lines() {
-            if let Some(caps) = re.captures(&line.unwrap()) {
-                let func_name = caps[1].to_string();
-                if let Some(i) = res.ok.iter().position(|f| f.to_string() == func_name) {
-                    res.ok.swap_remove(i);
-                    res.fail.push(Path::from_str(&func_name));
-                }
+            if let Some(caps) = re_ok.captures(line.as_ref().unwrap()) {
+                let func_name = caps[1].to_string().replace("___", "::");
+                res.ok.push(Path::from_str(&func_name));
+            }
+            if let Some(caps) = re_fail.captures(line.as_ref().unwrap()) {
+                let func_name = caps[1].to_string().replace("___", "::");
+                res.fail.push(Path::from_str(&func_name));
             }
         }
 
@@ -349,7 +349,7 @@ impl Component for PropertyBasedTesting {
     }
 
     fn run(&self, checker: &Checker) -> CheckResult {
-        let (functions, harness) = self.generate_harness_file(checker);
+        let harness = self.generate_harness(checker);
         let res = self.create_harness_project(checker, harness);
         if let Err(e) = res {
             return CheckResult::failed(e);
@@ -359,7 +359,7 @@ impl Component for PropertyBasedTesting {
         if let Err(e) = res {
             return CheckResult::failed(e);
         }
-        let check_res = self.analyze_pbt_output(&functions);
+        let check_res = self.analyze_pbt_output();
 
         if !self.config.keep_harness {
             if let Err(e) = self.remove_harness_project() {

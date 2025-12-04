@@ -1,7 +1,7 @@
-use criterion::{criterion_group, criterion_main, Criterion};
+use criterion::{Criterion, criterion_group, criterion_main};
+use hvisor_verified_allocator::optimized as v3;
 use hvisor_verified_allocator::original as v1;
 use hvisor_verified_allocator::verified_impl as v2;
-use hvisor_verified_allocator::optimized as v3;
 
 /// ------------------------
 /// Program level: Four test suites
@@ -60,9 +60,15 @@ pub fn bench_bitalloc1m_functions(c: &mut Criterion) {
     // alloc_contiguous
     {
         let mut group = c.benchmark_group("func_bitalloc1m_alloc_contiguous");
-        group.bench_function("v1_original", |b| b.iter(|| v1::bitalloc1m_alloc_contiguous()));
-        group.bench_function("v2_verified", |b| b.iter(|| v2::bitalloc1m_alloc_contiguous()));
-        group.bench_function("v3_optimized", |b| b.iter(|| v3::bitalloc1m_alloc_contiguous()));
+        group.bench_function("v1_original", |b| {
+            b.iter(|| v1::bitalloc1m_alloc_contiguous())
+        });
+        group.bench_function("v2_verified", |b| {
+            b.iter(|| v2::bitalloc1m_alloc_contiguous())
+        });
+        group.bench_function("v3_optimized", |b| {
+            b.iter(|| v3::bitalloc1m_alloc_contiguous())
+        });
         group.finish();
     }
 

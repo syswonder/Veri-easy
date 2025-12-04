@@ -43,9 +43,9 @@ pub struct KaniConfig {
     pub keep_harness: bool,
     /// Keep Kani output file.
     pub keep_output: bool,
-    /// Use preconditions.
+    /// Use preconditions. If true, preconditions will be added to the harness through `kani::assume`.
     pub use_preconditions: bool,
-    /// Loop unwind bound.
+    /// Loop unwind bound. If set, `#[kani(unwind(N))]` will be added to functions.
     pub loop_unwind: Option<u32>,
 }
 
@@ -96,20 +96,27 @@ pub struct DiffFuzzConfig {
     pub output_path: String,
     /// Executions for fuzzing.
     pub executions: u32,
-    /// Initial input count.
+    /// Number of initial inputs to seed the fuzzer.
     pub initial_inputs: usize,
-    /// Length of each input.
+    /// Length of each initial input. This is essential for fuzzer to generate interesting inputs.
     pub input_len: usize,
+    /// Generate new harness.
+    pub gen_harness: bool,
     /// Keep fuzzing harness project.
     pub keep_harness: bool,
     /// Keep fuzzing output file.
     pub keep_output: bool,
     /// Use preconditions.
     pub use_preconditions: bool,
-    /// Catch panic unwind.
+    /// Catch panic unwind. If false, the fuzzer may crash on invalid inputs. You should always enable 
+    /// this if `use_preconditions` is false.
     pub catch_panic: bool,
-    /// Enable log in fuzzing harness
+    /// Enable log in fuzzing harness. This is essential for Veri-easy to analyze the 
+    /// execution results. You can disable this for faster fuzzing and coverage measurement.
     pub harness_log: bool,
+    /// Execute custom command before fuzzing. This can be used to modify the generated harness,
+    /// e.g., replacing the `main.rs` file with a custom one.
+    pub pre_fuzz_cmd: Option<String>,
 }
 
 impl Default for DiffFuzzConfig {
@@ -119,12 +126,14 @@ impl Default for DiffFuzzConfig {
             output_path: "df.tmp".to_string(),
             executions: 1000,
             initial_inputs: 16,
-            input_len: 131072,
+            input_len: 65536,
+            gen_harness: true,
             keep_harness: false,
             keep_output: false,
             use_preconditions: true,
             catch_panic: true,
             harness_log: true,
+            pre_fuzz_cmd: None,
         }
     }
 }
@@ -137,13 +146,18 @@ pub struct PBTConfig {
     pub harness_path: String,
     /// PBT output path.
     pub output_path: String,
-    /// Test cases.
+    /// Test cases. Set `#![proptest_config(ProptestConfig { cases: N })]` in harness.
     pub test_cases: usize,
+    /// Timeout in seconds for each test case. Set `#![proptest_config(ProptestConfig { timeout: N })]` in harness.
+    pub timeout_secs: u64,
+    /// Generate new harness.
+    pub gen_harness: bool,
     /// Keep PBT harness project.
     pub keep_harness: bool,
     /// Keep PBT output file.
     pub keep_output: bool,
-    /// Use preconditions.
+    /// Use preconditions. If true, preconditions will be added to the harness by filtering
+    /// generated test cases.
     pub use_preconditions: bool,
 }
 
@@ -153,6 +167,8 @@ impl Default for PBTConfig {
             harness_path: "pbt_harness".to_string(),
             output_path: "pbt.tmp".to_string(),
             test_cases: 10000,
+            timeout_secs: 120,
+            gen_harness: true,
             keep_harness: false,
             keep_output: false,
             use_preconditions: true,

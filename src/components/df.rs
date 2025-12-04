@@ -326,12 +326,6 @@ impl HarnessBackend for DFHarnessBackend {
 
             // Harness logging utils
             #log_utils
-
-            #(#args_structs)*
-            #(#functions)*
-            #(#methods)*
-            #additional
-
             fn main() {
                 #init_log
                 afl::fuzz_nohook!(|data: &[u8]| {
@@ -340,6 +334,11 @@ impl HarnessBackend for DFHarnessBackend {
                     }
                 });
             }
+
+            #(#args_structs)*
+            #(#functions)*
+            #(#methods)*
+            #additional
         }
     }
 }
@@ -358,7 +357,26 @@ impl DifferentialFuzzing {
         Self { config }
     }
 
-    fn generate_harness_file(&self, checker: &Checker) -> (Vec<Path>, TokenStream) {
+    /// Return the functions that are checked in the harness.
+    fn checked_functions(&self, checker: &Checker) -> Vec<Path> {
+        let mut collection = FunctionCollection::new(
+            checker.under_checking_funcs.clone(),
+            checker.constructors.clone(),
+            checker.getters.clone(),
+            checker.preconditions.clone(),
+        );
+        collection.remove_methods_without_constructors();
+        collection.remove_unused_constructors_and_getters();
+        collection
+            .functions
+            .iter()
+            .map(|f| f.metadata.name.clone())
+            .chain(collection.methods.iter().map(|f| f.metadata.name.clone()))
+            .collect::<Vec<_>>()
+    }
+
+    /// Generate the fuzzing harness.
+    fn generate_harness(&self, checker: &Checker) -> TokenStream {
         let generator = DFHarnessGenerator::new(
             checker,
             DFHarnessBackend {
@@ -367,22 +385,7 @@ impl DifferentialFuzzing {
                 harness_log: self.config.harness_log,
             },
         );
-        // Collect functions and methods that are checked in harness
-        let functions = generator
-            .collection
-            .functions
-            .iter()
-            .map(|f| f.metadata.name.clone())
-            .chain(
-                generator
-                    .collection
-                    .methods
-                    .iter()
-                    .map(|f| f.metadata.name.clone()),
-            )
-            .collect::<Vec<_>>();
-        let harness = generator.generate_harness();
-        (functions, harness)
+        generator.generate_harness()
     }
 
     /// Create a cargo project for LibAFL harness.
@@ -430,6 +433,17 @@ afl = "*"
                 .map_err(|_| anyhow!("Failed to write initial input file"))?;
         }
 
+        Ok(())
+    }
+
+    /// Execute custom command before fuzzing
+    fn execute_pre_fuzz_cmd(&self) -> anyhow::Result<()> {
+        if let Some(cmd) = &self.config.pre_fuzz_cmd {
+            let status = run_command("sh", &["-c", cmd], None, None)?;
+            if !status.success() {
+                return Err(anyhow!("Pre-fuzz command failed with status: {}", status));
+            }
+        }
         Ok(())
     }
 
@@ -522,13 +536,22 @@ impl Component for DifferentialFuzzing {
     }
 
     fn run(&self, checker: &Checker) -> CheckResult {
-        let (functions, harness) = self.generate_harness_file(checker);
-        let res = self.create_harness_project(checker, harness);
+        if self.config.gen_harness {
+            let harness = self.generate_harness(checker);
+            let res = self.create_harness_project(checker, harness);
+            if let Err(e) = res {
+                return CheckResult::failed(e);
+            }
+        }
+        // Note: if using existing harness, the checked functions may be different from
+        // generated harness, but we still use the functions from checker for analysis.
+        let functions = self.checked_functions(checker);
+
+        let res = self.prepare_initial_inputs();
         if let Err(e) = res {
             return CheckResult::failed(e);
         }
-
-        let res = self.prepare_initial_inputs();
+        let res = self.execute_pre_fuzz_cmd();
         if let Err(e) = res {
             return CheckResult::failed(e);
         }

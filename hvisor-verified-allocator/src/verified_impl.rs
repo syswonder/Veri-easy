@@ -87,7 +87,7 @@ pub trait BitAllocView {
         Self: Sized;
 
     fn verieasy_get(&self) -> Vec<u16>;
-    
+
     /// Find a index not less than a given key, where the bit is free.
     fn next(&self, key: usize) -> Option<usize>;
 
@@ -148,10 +148,44 @@ impl BitAlloc256 {
 }
 
 impl BitAlloc4K {
-    pub fn verieasy_new(bitmap: [[u16; 16]; 16]) -> Self {
+    pub fn verieasy_new(bitmap: [u16; 256]) -> Self {
         let mut res = BitAlloc4K::default();
-        for (i, &sub_bitmap) in bitmap.iter().enumerate() {
+        for i in 0..16 {
+            let mut sub_bitmap = [0u16; 16];
+            for j in 0..16 {
+                sub_bitmap[j] = bitmap[i * 16 + j];
+            }
             res.sub[i] = BitAlloc256::verieasy_new(sub_bitmap);
+            res.bitset.set_bit(i as u16, res.sub[i].any());
+        }
+        res
+    }
+}
+
+impl BitAlloc64K {
+    pub fn verieasy_new(bitmap: [u16; 4096]) -> Self {
+        let mut res = BitAlloc64K::default();
+        for i in 0..16 {
+            let mut sub_bitmap = [0u16; 256];
+            for j in 0..256 {
+                sub_bitmap[j] = bitmap[i * 256 + j];
+            }
+            res.sub[i] = BitAlloc4K::verieasy_new(sub_bitmap);
+            res.bitset.set_bit(i as u16, res.sub[i].any());
+        }
+        res
+    }
+}
+
+impl BitAlloc1M {
+    pub fn verieasy_new(bitmap: [u16; 65536]) -> Self {
+        let mut res = BitAlloc1M::default();
+        for i in 0..16 {
+            let mut sub_bitmap = [0u16; 4096];
+            for j in 0..4096 {
+                sub_bitmap[j] = bitmap[i * 4096 + j];
+            }
+            res.sub[i] = BitAlloc64K::verieasy_new(sub_bitmap);
             res.bitset.set_bit(i as u16, res.sub[i].any());
         }
         res
@@ -614,7 +648,7 @@ pub fn bitalloc_contiguous() {
     }
 }
 
-pub fn bitalloc1m(){
+pub fn bitalloc1m() {
     let mut ba0 = BitAlloc1M::default();
     ba0.insert(0..BitAlloc1M::cap());
     ba0.remove(3..6);
@@ -653,27 +687,27 @@ pub fn bitalloc1m(){
     }
 }
 
-pub fn bitalloc1m_alloc(){
+pub fn bitalloc1m_alloc() {
     let mut ba = BitAlloc1M::default();
     ba.alloc();
 }
 
-pub fn bitalloc1m_alloc_contiguous(){
+pub fn bitalloc1m_alloc_contiguous() {
     let mut ba = BitAlloc1M::default();
     ba.alloc_contiguous(1588, 1);
 }
 
-pub fn bitalloc1m_dealloc(){
+pub fn bitalloc1m_dealloc() {
     let mut ba = BitAlloc1M::default();
     ba.dealloc(251);
 }
 
-pub fn bitalloc1m_insert(){
+pub fn bitalloc1m_insert() {
     let mut ba = BitAlloc1M::default();
     ba.insert(0..BitAlloc1M::cap());
 }
 
-pub fn bitalloc1m_remove(){
+pub fn bitalloc1m_remove() {
     let mut ba = BitAlloc1M::default();
     ba.remove(0..BitAlloc1M::cap());
 }

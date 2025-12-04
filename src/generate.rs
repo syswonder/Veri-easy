@@ -90,7 +90,7 @@ impl FunctionCollection {
     /// If `methods` doesn't have a method of type `T`, then its constructor and getter asre unused.
     ///
     /// This function removes those constructors and getters.
-    fn remove_unused_constructors_and_getters(&mut self) {
+    pub fn remove_unused_constructors_and_getters(&mut self) {
         let mut unused_types = Vec::new();
         for (type_, _) in &self.constructors {
             if !self
@@ -116,7 +116,7 @@ impl FunctionCollection {
     /// If `methods` has a method of type `T`, but `constructors` doesn't have a constructor of type `T`.
     ///
     /// This function removes those methods.
-    fn remove_methods_without_constructors(&mut self) {
+    pub fn remove_methods_without_constructors(&mut self) {
         let mut no_constructor_types = Vec::new();
         for method in &self.methods {
             if !self.constructors.contains_key(method.impl_type())

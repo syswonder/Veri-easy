@@ -110,4 +110,5 @@ fn main() {
     log!(Normal, Simple, "");
 
     checker.run_all();
+    checker.print_summary();
 }

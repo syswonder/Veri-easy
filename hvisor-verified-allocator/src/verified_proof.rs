@@ -81,7 +81,7 @@ macro_rules! set_bits16 {
     }
 }
 
-verus!{
+verus! {
 
 global layout usize is size == 8;
 
@@ -2329,4 +2329,5 @@ proof fn lemma_up_align_le_capacity(next:usize, capacity:usize, align_log2:usize
 fn main() {
 
 }
-}
+
+} // verus!

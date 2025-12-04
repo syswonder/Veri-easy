@@ -118,7 +118,7 @@ pub trait BitAlloc: BitAllocView {
 }
 
 /// A bitmap of 256 bits
-pub type BitAlloc256 = BitAllocCascade16<BitAlloc16>; 
+pub type BitAlloc256 = BitAllocCascade16<BitAlloc16>;
 /// A bitmap of 4K bits
 pub type BitAlloc4K = BitAllocCascade16<BitAlloc256>;
 /// A bitmap of 64K bits
@@ -127,7 +127,7 @@ pub type BitAlloc64K = BitAllocCascade16<BitAlloc4K>;
 pub type BitAlloc1M = BitAllocCascade16<BitAlloc64K>;
 
 /// Implement the bit allocator by segment tree algorithm.
-#[derive(Copy,Default)]
+#[derive(Copy, Default)]
 pub struct BitAllocCascade16<T: BitAllocView> {
     pub bitset: BitAlloc16, // for each bit, 1 indicates available, 0 indicates inavailable
     pub sub: [T; 16],
@@ -257,7 +257,7 @@ impl<T: BitAlloc + std::marker::Copy> BitAlloc for BitAllocCascade16<T> {
             } else {
                 self.sub[i].remove(begin..stop);
             }
-            
+
             self.bitset.set_bit(i as u16, self.sub[i].any());
 
             current_end = stop + i * T::CAP;
@@ -276,7 +276,7 @@ impl<T: BitAlloc + std::marker::Copy> BitAlloc for BitAllocCascade16<T> {
 }
 
 /// Represents a 16-bit bitmap allocator.
-#[derive(Clone, Copy,Default)]
+#[derive(Clone, Copy, Default)]
 pub struct BitAlloc16 {
     pub bits: u16,
 }
@@ -447,8 +447,6 @@ fn find_contiguous<T: BitAllocView>(
     None
 }
 
-fn main() {}
-
 // #[test]
 pub fn bitalloc16() {
     let mut ba = BitAlloc16::default();
@@ -538,7 +536,7 @@ pub fn bitalloc_contiguous() {
     }
 }
 
-pub fn bitalloc1m(){
+pub fn bitalloc1m() {
     let mut ba0 = BitAlloc1M::default();
     ba0.insert(0..BitAlloc1M::CAP);
     ba0.remove(3..6);
@@ -577,27 +575,27 @@ pub fn bitalloc1m(){
     }
 }
 
-pub fn bitalloc1m_alloc(){
+pub fn bitalloc1m_alloc() {
     let mut ba = BitAlloc1M::default();
     ba.alloc();
 }
 
-pub fn bitalloc1m_alloc_contiguous(){
+pub fn bitalloc1m_alloc_contiguous() {
     let mut ba = BitAlloc1M::default();
     ba.alloc_contiguous(1588, 1);
 }
 
-pub fn bitalloc1m_dealloc(){
+pub fn bitalloc1m_dealloc() {
     let mut ba = BitAlloc1M::default();
     ba.dealloc(251);
 }
 
-pub fn bitalloc1m_insert(){
+pub fn bitalloc1m_insert() {
     let mut ba = BitAlloc1M::default();
     ba.insert(0..BitAlloc1M::CAP);
 }
 
-pub fn bitalloc1m_remove(){
+pub fn bitalloc1m_remove() {
     let mut ba = BitAlloc1M::default();
     ba.remove(0..BitAlloc1M::CAP);
 }

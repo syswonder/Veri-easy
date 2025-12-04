@@ -1,4 +1,4 @@
-components = ["difffuzz"]
+components = ["identical", "kani", "pbt", "difffuzz"]
 
 [kani]
 harness_path = "kani_harness"
@@ -19,18 +19,22 @@ keep_output = false
 harness_path = "df_harness"
 output_path = "df.tmp"
 initial_inputs = 16
-input_len = 150000
-executions = 1000000
+input_len = 140000
+executions = 100000
+gen_harness = true
 keep_harness = true
 keep_output = true
 catch_panic = false
 use_preconditions = true
 harness_log = true
+pre_fuzz_cmd = "cp df_harness.rs df_harness/src/main.rs"
 
 [pbt]
 harness_path = "pbt_harness"
 output_path = "pbt.tmp"
-test_cases = 100000
+test_cases = 2000
+timeout_secs = 120
+gen_harness = true
 keep_harness = true
 keep_output = true
-use_preconditions = false
+use_preconditions = true

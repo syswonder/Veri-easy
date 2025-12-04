@@ -246,37 +246,21 @@ impl Checker {
             self.print_state();
             log!(Brief, Simple, "");
         }
+    }
 
-        // If both under-checking and failed functions are empty, all functions have been checked
-        if self.under_checking_funcs.is_empty() && self.failed_funcs.is_empty() {
-            log!(Brief, Ok, "All functions have been checked.");
-        }
-        // If any functions failed, log them
-        if !self.failed_funcs.is_empty() {
-            let names: Vec<&Path> = self.failed_funcs.iter().map(|f| &f.metadata.name).collect();
-            log!(Brief, Error, "Some functions failed checks: {:?}", names);
-        }
+    /// Print test results summary
+    pub fn print_summary(&self) {
+        log!(Brief, Simple, "");
+        log!(
+            Brief,
+            Critical,
+            "Check Summary: Verified: {}, Tested: {}, Failed: {}",
+            self.verified_funcs.len(),
+            self.tested_funcs.len(),
+            self.failed_funcs.len(),
+        );
 
-        let fail_formal_pass_test: Vec<&Path> = self
-            .failed_funcs
-            .iter()
-            .filter(|f| {
-                self.tested_funcs
-                    .iter()
-                    .any(|tf| tf.metadata.name == f.metadata.name)
-            })
-            .map(|f| &f.metadata.name)
-            .collect();
-        if !fail_formal_pass_test.is_empty() {
-            log!(
-                Brief,
-                Warning,
-                "Some functions failed formal checks but passed testing checks: {:?}",
-                fail_formal_pass_test
-            );
-        }
-
-        let unchecked_and_untested: Vec<&Path> = self
+        let unchecked: Vec<&Path> = self
             .under_checking_funcs
             .iter()
             .filter(|f| {
@@ -284,15 +268,49 @@ impl Checker {
                     .tested_funcs
                     .iter()
                     .any(|tf| tf.metadata.name == f.metadata.name)
+                    && !self
+                        .verified_funcs
+                        .iter()
+                        .any(|vf| vf.metadata.name == f.metadata.name)
             })
             .map(|f| &f.metadata.name)
             .collect();
-        if !unchecked_and_untested.is_empty() {
+        if unchecked.is_empty() {
+            // If all functions are checked, log success
+            log!(Brief, Ok, "All functions have been checked.");
+        } else {
+            // If any functions are checked neither formally nor by testing, log them as error
             log!(
                 Brief,
                 Error,
-                "Some functions remain unverified after all checks: {:?}",
-                unchecked_and_untested
+                "Some functions remain unverified and untested after all checks: {:?}",
+                unchecked
+            );
+        }
+
+        // If any functions failed, log them as error
+        if !self.failed_funcs.is_empty() {
+            let names: Vec<&Path> = self.failed_funcs.iter().map(|f| &f.metadata.name).collect();
+            log!(Brief, Error, "Some functions failed checks: {:?}", names);
+        }
+        // If any functions are tested but not verified, log them as warning
+        let unverified_but_tested: Vec<&Path> = self
+            .tested_funcs
+            .iter()
+            .filter(|f| {
+                !self
+                    .verified_funcs
+                    .iter()
+                    .any(|vf| vf.metadata.name == f.metadata.name)
+            })
+            .map(|f| &f.metadata.name)
+            .collect();
+        if !unverified_but_tested.is_empty() {
+            log!(
+                Brief,
+                Warning,
+                "Some functions are tested but not verified by formal checks: {:?}",
+                unverified_but_tested
             );
         }
     }
@@ -326,14 +344,12 @@ impl Checker {
     fn preprocess(&mut self) {
         let mut common_funcs = Vec::new();
 
-        // Find common functions by signature
+        // Find common functions by name and signature
         for func in &self.src1.unique_funcs {
-            if let Some(func2) = self
-                .src2
-                .unique_funcs
-                .iter()
-                .find(|func2| func.metadata.signature == func2.metadata.signature)
-            {
+            if let Some(func2) = self.src2.unique_funcs.iter().find(|func2| {
+                func.metadata.name == func2.metadata.name
+                    && func.metadata.signature == func2.metadata.signature
+            }) {
                 common_funcs.push(CommonFunction::new(
                     func.metadata.clone(),
                     func.body.clone(),

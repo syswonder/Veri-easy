@@ -47,6 +47,28 @@ cargo run -- -l verbose file1.rs file2.rs
 cargo run -- -c path/to/workflow.toml file1.rs file2.rs
 ```
 
+`Makefile` is provided for running experiments in our FM26 paper:
+
+```zsh
+# Benchmark the allocator implementations
+make bench
+
+# Run Verus on the proof module of the allocator
+make verify
+
+# Run the Veri-easy workflow on the original and verified implementations of the allocator
+make verieasy
+```
+
+You can edit `workflow.toml` to customize the workflow and per-component settings. For example, you
+can increase the Kani timeout to verify more complex functions.
+
+```toml
+[kani]
+timeout_secs = 100
+# other settings ...
+```
+
 ### CLI Options
 - `-c, --config <FILE>`: workflow TOML (default `workflow.toml`).
 - `-l, --log <LEVEL>`: `brief`, `normal`, or `verbose`.

@@ -235,6 +235,7 @@ impl PropertyBasedTesting {
         Self { config }
     }
 
+    /// Generate the PBT harness.
     fn generate_harness(&self, checker: &Checker) -> TokenStream {
         let generator = PBTHarnessGenerator::new(
             checker,
@@ -349,10 +350,12 @@ impl Component for PropertyBasedTesting {
     }
 
     fn run(&self, checker: &Checker) -> CheckResult {
-        let harness = self.generate_harness(checker);
-        let res = self.create_harness_project(checker, harness);
-        if let Err(e) = res {
-            return CheckResult::failed(e);
+        if self.config.gen_harness {
+            let harness = self.generate_harness(checker);
+            let res = self.create_harness_project(checker, harness);
+            if let Err(e) = res {
+                return CheckResult::failed(e);
+            }
         }
 
         let res = self.run_test();

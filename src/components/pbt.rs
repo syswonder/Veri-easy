@@ -21,6 +21,8 @@ use crate::{
 struct PBTHarnessBackend {
     /// Number of test cases.
     cases: usize,
+    /// Timeout in seconds.
+    timeout_secs: u64,
     /// Use preconditions.
     use_preconditions: bool,
 }
@@ -201,6 +203,7 @@ impl HarnessBackend for PBTHarnessBackend {
         _additional: TokenStream,
     ) -> TokenStream {
         let cases = TokenStream::from_str(&self.cases.to_string()).unwrap();
+        let timeout = TokenStream::from_str(&(self.timeout_secs * 1000).to_string()).unwrap();
         quote! {
             #![allow(unused)]
             #![allow(non_snake_case)]
@@ -212,7 +215,11 @@ impl HarnessBackend for PBTHarnessBackend {
             #(#imports)*
             #(#args_structs)*
             proptest! {
-                #![proptest_config(ProptestConfig::with_cases(#cases))]
+                #![proptest_config(ProptestConfig {
+                    cases: #cases,
+                    timeout: #timeout,
+                    .. ProptestConfig::default()
+                })]
                 #(#functions)*
                 #(#methods)*
             }
@@ -241,6 +248,7 @@ impl PropertyBasedTesting {
             checker,
             PBTHarnessBackend {
                 cases: self.config.test_cases,
+                timeout_secs: self.config.timeout_secs,
                 use_preconditions: self.config.use_preconditions,
             },
         );

@@ -146,8 +146,10 @@ pub struct PBTConfig {
     pub harness_path: String,
     /// PBT output path.
     pub output_path: String,
-    /// Test cases. Set `#![proptest_config(ProptestConfig::with_cases(N)))]` in harness.
+    /// Test cases. Set `#![proptest_config(ProptestConfig { cases: N })]` in harness.
     pub test_cases: usize,
+    /// Timeout in seconds for each test case. Set `#![proptest_config(ProptestConfig { timeout: N })]` in harness.
+    pub timeout_secs: u64,
     /// Generate new harness.
     pub gen_harness: bool,
     /// Keep PBT harness project.
@@ -165,6 +167,7 @@ impl Default for PBTConfig {
             harness_path: "pbt_harness".to_string(),
             output_path: "pbt.tmp".to_string(),
             test_cases: 10000,
+            timeout_secs: 120,
             gen_harness: true,
             keep_harness: false,
             keep_output: false,

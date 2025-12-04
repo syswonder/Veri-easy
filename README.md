@@ -21,10 +21,12 @@ Veri-easy is a lightweight and automated framework that combines multiple formal
 
 ## Environment
 - Rust toolchain and `cargo`.
-- Kani (optional; required when using the `kani` component). Ensure `kani` is installed and usable in the environment.
-  See [Kani docs](https://model-checking.github.io/kani/install-guide.html) for installation instructions
+- Kani (optional; required when using the `kani` component). Ensure `kani` is installed and usable in the environment. See [Kani docs](https://model-checking.github.io/kani/install-guide.html) for installation instructions.
 - Crate `proptest` and `proptest-derive` are used via the PBT harness project; The dependencies are included in the generated harness, and handled by Cargo automatically.
-- Differential fuzzing harness uses AFL(American fuzzy lop) and `afl.rs` workflows. Use `cargo install cargo-afl` to install the afl toolchain. See [cargo-fuzz](https://rust-fuzz.github.io/book/afl.html) for more details.
+- Differential fuzzing harness uses AFL(American fuzzy lop) and `afl.rs` workflows. You need to set up the AFL toolchain before running the fuzzing component:
+	+ Use `cargo install cargo-afl` to install the afl toolchain. 
+	+ Use `cargo afl config --build` to set up the environment.
+	+ See [cargo-fuzz](https://rust-fuzz.github.io/book/afl.html) for more details.
 - Alive2 (optional; required when `alive2` is enabled): set `alive2_path` to your `alive-tv` binary in `workflow.toml`. See [Alive2 repo](https://github.com/AliveToolkit/alive2) for installation instructions.
 
 ## Usage

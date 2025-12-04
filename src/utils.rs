@@ -105,8 +105,8 @@ pub fn run_command(
         );
     } else {
         log!(
-            Verbose,
-            Warning,
+            Normal,
+            Error,
             "Command '{}' failed with exit code: {}",
             program,
             output.status

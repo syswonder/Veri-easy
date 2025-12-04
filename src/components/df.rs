@@ -459,7 +459,7 @@ afl = "*"
             return Err(anyhow!("Command failed due to compilation error"));
         }
 
-        let _fuzz_status = run_command(
+        let fuzz_status = run_command(
             "cargo",
             &[
                 "afl",
@@ -475,6 +475,9 @@ afl = "*"
             None,
             Some(&self.config.harness_path),
         )?;
+        if fuzz_status.code() != Some(0) {
+            return Err(anyhow!("Fuzzing process failed with status: {}", fuzz_status));
+        }
         std::fs::copy(
             format!("{}/harness_output.log", self.config.harness_path),
             &self.config.output_path,

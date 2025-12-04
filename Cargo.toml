@@ -18,5 +18,5 @@ clap = { version = "4.5.53", features = ["derive"] }
 rand = "*"
 
 [workspace]
-members = ["precond-translator"]
+members = ["precond-translator", "hvisor-verified-allocator"]
 exclude = ["kani_harness", "pbt_harness", "df_harness"]

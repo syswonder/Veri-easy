@@ -13,7 +13,11 @@ mod visit;
 /// for generating executable precondition checking functions and spec functions/methods.
 pub fn parse_file_and_create_generator(file_path: &str) -> anyhow::Result<CodeGenerator> {
     let file = std::fs::read_to_string(file_path)
-        .map_err(|e| anyhow::anyhow!("Failed to read file {}: {}", file_path, e))?;
+        .map_err(|e| anyhow::anyhow!("Failed to read file {}: {}", file_path, e))?
+        // Remove verus! { ... } wrapper if exists
+        // TODO: better way to handle this?
+        .replace("verus! {", "")
+        .replace("} // verus!", "");
     let syntax: File = verus_syn::parse_file(&file)
         .map_err(|e| anyhow::anyhow!("Failed to parse file {}: {}", file_path, e))?;
 

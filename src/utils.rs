@@ -96,7 +96,12 @@ pub fn run_command(
         .join()
         .expect("Failed to join stdout saving thread");
 
-    if output.status.success() {
+    // Treat Kani's exit code 1 (unsure verification) as normal.
+    let is_kani_exit_1 = program == "cargo"
+    && args.iter().any(|a| *a == "kani")
+    && output.status.code() == Some(1);
+
+    if output.status.success() || is_kani_exit_1 {
         log!(
             Verbose,
             Info,

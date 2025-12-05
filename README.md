@@ -52,6 +52,24 @@ make verify
 # Please ensure that all Veri-easy dependencies are installed and available.
 make verieasy
 ```
+Generally, the workflow can be invoked as follows:
+
+```zsh
+# Build
+cargo build
+
+# Run with defaults (uses workflow.toml)
+cargo run -- file1.rs file2.rs
+
+# Specify preconditions (Verus file) and strict mode
+cargo run -- -p verus_specs.rs -s file1.rs file2.rs
+
+# Adjust log level (brief|normal|verbose)
+cargo run -- -l verbose file1.rs file2.rs
+
+# Use a different workflow config
+cargo run -- -c path/to/workflow.toml file1.rs file2.rs
+```
 
 You can edit `workflow.toml` to customize the workflow and per-component settings. For example, you
 can increase the Kani timeout to verify more complex functions.
@@ -107,7 +125,7 @@ keep_output = true
 use_preconditions = false
 ```
 
-Notes:
+**Notes**:
 - Component names accepted: `identical`, `kani`, `pbt`, `difffuzz` (`diff-fuzz`, `diff_fuzz` also accepted), `alive2`.
 - Missing per-component sections are filled with sensible defaults.
 - `preconditions` (CLI) enables argument assumptions in harnesses when supported.

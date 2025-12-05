@@ -1,6 +1,6 @@
 # Veri-easy
 
-Veri-easy is a lightweight and automated framework that combines multiple formal and testing techniques to establish functional equivalence between the verified and original implementations. It automates function collection, harness generation, integrates with Kani model checking, property-based testing (Proptest), and differential fuzzing, and can optionally invoke Alive2 for IR-level validation.
+Veri-easy is a lightweight and automated framework that combines multiple testing and proof (TAP) techniques to establish functional equivalence between the verified and original implementations. It automates function collection, harness generation, integrates with Kani model checking, property-based testing (Proptest), and differential fuzzing, and can optionally invoke Alive2 for IR-level validation.
 
 ## Features
 - Functional equivalence checking across multiple components: `identical`, `kani`, `pbt`, `difffuzz`, `alive2`, and more ...
@@ -17,48 +17,39 @@ Veri-easy is a lightweight and automated framework that combines multiple formal
 - `src/components/`: Implementations of each component (`kani.rs`, `pbt.rs`, `df.rs`, `alive2.rs`, `identical.rs`).
 - `src/collect/` and `src/defs/`: Function/type/path abstractions and collection utilities.
 - `precond-translator/`: Verus parser and code generator for preconditions and spec functions.
+- `hvisor-verified-allocator/`: Formal verification of the memory allocator in hvisor.
 - `workflow.toml`: Configures the component pipeline and per-component settings.
 
 ## Environment
 - Rust toolchain and `cargo`.
-- Kani (optional; required when using the `kani` component). Ensure `kani` is installed and usable in the environment. See [Kani docs](https://model-checking.github.io/kani/install-guide.html) for installation instructions.
+- Verus (for verification) Ensure `Verus` is installed and usable in the environment. See [Verus docs](https://github.com/verus-lang/verus/blob/main/INSTALL.md) for installation instructions. Verus must be available in `$PATH` as `verus`.
+- Kani (required when using the `kani` component). Ensure `kani` is installed and usable in the environment.
+	+ Use `cargo install --locked kani-verifier` to install kani.
+ 	+ Use `cargo kani setup` to set up the environment.
+  	+ See [Kani docs](https://model-checking.github.io/kani/install-guide.html) for more details.
 - Crate `proptest` and `proptest-derive` are used via the PBT harness project; The dependencies are included in the generated harness, and handled by Cargo automatically.
-- Differential fuzzing harness uses AFL(American fuzzy lop) and `afl.rs` workflows. You need to set up the AFL toolchain before running the fuzzing component:
+- Differential fuzzing harness uses AFL (American fuzzy lop) and `afl.rs` workflows. You need to set up the AFL toolchain before running the fuzzing component:
 	+ Use `cargo install cargo-afl` to install the afl toolchain. 
 	+ Use `cargo afl config --build` to set up the environment.
-	+ See [cargo-fuzz](https://rust-fuzz.github.io/book/afl.html) for more details.
+ 	+ Use `cargo afl system-config` to configure the system for AFL.
+	+ See [`cargo-afl`](https://github.com/rust-fuzz/afl.rs) for more details.
 - Alive2 (optional; required when `alive2` is enabled): set `alive2_path` to your `alive-tv` binary in `workflow.toml`. See [Alive2 repo](https://github.com/AliveToolkit/alive2) for installation instructions.
 
 ## Usage
 Build and run from the workspace root.
 
-```zsh
-# Build
-cargo build
-
-# Run with defaults (uses workflow.toml)
-cargo run -- file1.rs file2.rs
-
-# Specify preconditions (Verus file) and strict mode
-cargo run -- -p verus_specs.rs -s file1.rs file2.rs
-
-# Adjust log level (brief|normal|verbose)
-cargo run -- -l verbose file1.rs file2.rs
-
-# Use a different workflow config
-cargo run -- -c path/to/workflow.toml file1.rs file2.rs
-```
-
-`Makefile` is provided for running experiments in our FM26 paper:
+We provide a `Makefile` that reproduces the results in our FM26 paper:
 
 ```zsh
-# Benchmark the allocator implementations
+# Benchmark the allocator implementations.
 make bench
 
-# Run Verus on the proof module of the allocator
+# Run Verus on the allocator proof module.
+# Please ensure that `verus` is available on your $PATH.
 make verify
 
-# Run the Veri-easy workflow on the original and verified implementations of the allocator
+# Run the full Veri-easy workflow on the original and verified allocator implementations.
+# Please ensure that all Veri-easy dependencies are installed and available.
 make verieasy
 ```
 
@@ -80,24 +71,28 @@ timeout_secs = 100
 
 ### Workflow Configuration (`workflow.toml`)
 Example (defaults present in repo):
+> For quick demonstration purposes, we use a shorter Kani timeout and fewer
+> test executions than in our full experimental setup. This keeps the
+> Veri-easy workflow lightweight to run on a typical developer machine.
 
 ```toml
-components = ["kani", "pbt", "difffuzz"]
+components = ["identical", "kani", "pbt", "difffuzz"]
 
 [kani]
 harness_path = "kani_harness"
 output_path = "kani.tmp"
-timeout_secs = 1
+timeout_secs = 3 			# shorter timeout for quick demo runs
+							# Reviewers can increase this to 200 seconds to reproduce the full results reported in the paper.
 gen_harness = true
 keep_harness = true
 keep_output = true
 use_preconditions = true
-loop_unwind = 20
+loop_unwind = 17			# Reviewers can set this to 33 to match the paper’s experimental configuration (≈1 hour runtime).
 
 [diff_fuzz]
 harness_path = "df_harness"
 output_path = "df.tmp"
-executions = 500000
+executions = 500000  		# fewer executions for faster runs
 keep_harness = true
 keep_output = true
 catch_panic = true
@@ -106,7 +101,7 @@ use_preconditions = false
 [pbt]
 harness_path = "pbt_harness"
 output_path = "pbt.tmp"
-test_cases = 50000
+test_cases = 50000  		# reduced number of test cases
 keep_harness = true
 keep_output = true
 use_preconditions = false

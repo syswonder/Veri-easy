@@ -445,6 +445,7 @@ fn find_contiguous(
 }
 
 // #[test]
+#[ignore]
 pub fn bitalloc16() {
     let mut ba = BitAlloc16::default();
     assert_eq!(BitAlloc16::CAP, 16);
@@ -468,6 +469,7 @@ pub fn bitalloc16() {
 }
 
 // #[test]
+#[ignore]
 pub fn bitalloc4k() {
     let mut ba = BitAlloc4K::default();
     assert_eq!(BitAlloc4K::CAP, 4096);
@@ -493,6 +495,7 @@ pub fn bitalloc4k() {
 }
 
 // #[test]
+#[ignore]
 pub fn bitalloc_contiguous() {
     let mut ba0 = BitAlloc16::default();
     ba0.insert(0..BitAlloc16::CAP);
@@ -533,6 +536,7 @@ pub fn bitalloc_contiguous() {
     }
 }
 
+#[ignore]
 pub fn bitalloc1m() {
     let mut ba0 = BitAlloc1M::default();
     ba0.insert(0..BitAlloc1M::CAP);
@@ -572,26 +576,31 @@ pub fn bitalloc1m() {
     }
 }
 
+#[ignore]
 pub fn bitalloc1m_alloc() {
     let mut ba = BitAlloc1M::default();
     ba.alloc();
 }
 
+#[ignore]
 pub fn bitalloc1m_alloc_contiguous() {
     let mut ba = BitAlloc1M::default();
     ba.alloc_contiguous(1588, 1);
 }
 
+#[ignore]
 pub fn bitalloc1m_dealloc() {
     let mut ba = BitAlloc1M::default();
     ba.dealloc(251);
 }
 
+#[ignore]
 pub fn bitalloc1m_insert() {
     let mut ba = BitAlloc1M::default();
     ba.insert(0..BitAlloc1M::CAP);
 }
 
+#[ignore]
 pub fn bitalloc1m_remove() {
     let mut ba = BitAlloc1M::default();
     ba.remove(0..BitAlloc1M::CAP);

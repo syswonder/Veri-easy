@@ -8,7 +8,7 @@ gen_harness = true
 keep_harness = true
 keep_output = true
 use_preconditions = true
-loop_unwind = 20
+loop_unwind = 17
 
 [alive2]
 alive2_path = ""

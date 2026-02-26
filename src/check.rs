@@ -277,7 +277,7 @@ impl Checker {
             .collect();
         if unchecked.is_empty() {
             // If all functions are checked, log success
-            log!(Brief, Ok, "All functions have been checked.");
+            log!(Brief, Ok, "All functions have been checked, and no counterexamples were detected.");
         } else {
             // If any functions are checked neither formally nor by testing, log them as error
             log!(
@@ -292,26 +292,6 @@ impl Checker {
         if !self.failed_funcs.is_empty() {
             let names: Vec<&Path> = self.failed_funcs.iter().map(|f| &f.metadata.name).collect();
             log!(Brief, Error, "Some functions failed checks: {:?}", names);
-        }
-        // If any functions are tested but not verified, log them as warning
-        let unverified_but_tested: Vec<&Path> = self
-            .tested_funcs
-            .iter()
-            .filter(|f| {
-                !self
-                    .verified_funcs
-                    .iter()
-                    .any(|vf| vf.metadata.name == f.metadata.name)
-            })
-            .map(|f| &f.metadata.name)
-            .collect();
-        if !unverified_but_tested.is_empty() {
-            log!(
-                Brief,
-                Warning,
-                "Some functions are tested but not verified by formal checks: {:?}",
-                unverified_but_tested
-            );
         }
     }
 

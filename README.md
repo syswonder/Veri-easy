@@ -38,7 +38,7 @@ Veri-easy is a lightweight and automated framework that combines multiple testin
 ## Usage
 Build and run from the workspace root.
 
-We provide a `Makefile` that reproduces the results in our FM26 paper:
+We provide a `Makefile` that reproduces the results in our paper:
 
 ```zsh
 # Benchmark the allocator implementations.
